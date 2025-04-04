@@ -10,15 +10,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from '@/Components/ui/button'
 import { Form } from '@/Components/ui/form';
-// import { Label } from "@/Components/ui/label";
 
 
 import FormField from "./FormField";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "@firebase/auth";
 import { auth } from "@/firebase/client";
 import { signIn, signUp } from "@/lib/actions/auth.action";
-// import { Toaster } from "./ui/sonner";
-// import { Sign } from "node:crypto";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
