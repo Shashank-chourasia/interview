@@ -8,8 +8,8 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from '@/components/ui/Button';
-import { Form } from '@/components/ui/form';
+import { Button } from '@/Components/ui/button'
+import { Form } from '@/Components/ui/form';
 
 
 import FormField from "./FormField";
