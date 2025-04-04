@@ -8,8 +8,9 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/Button';
+import { Form } from '@/components/ui/form';
+
 
 import FormField from "./FormField";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "@firebase/auth";
