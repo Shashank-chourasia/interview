@@ -52,17 +52,19 @@ const Agent = ({
     };
 
     const onSpeechStart = () => {
-      console.log("speech start");
+      console.log("Speech started");
       setIsSpeaking(true);
     };
 
     const onSpeechEnd = () => {
-      console.log("speech end");
+      console.log("Speech ended");
       setIsSpeaking(false);
     };
 
-    const onError = (error: Error) => {
-      console.log("Error:", error);
+    const onError = (error: any) => {
+      console.error("VAPI Error (string):", error?.toString());
+      console.error("VAPI Error (JSON):", JSON.stringify(error, null, 2));
+      console.error("VAPI Error (raw):", error);
     };
 
     vapi.on("call-start", onCallStart);
@@ -88,8 +90,7 @@ const Agent = ({
     }
 
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-      console.log("handleGenerateFeedback");
-
+      console.log("Generating feedback...");
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
@@ -100,7 +101,7 @@ const Agent = ({
       if (success && id) {
         router.push(`/interview/${interviewId}/feedback`);
       } else {
-        console.log("Error saving feedback");
+        console.error("Error saving feedback");
         router.push("/");
       }
     };
@@ -117,26 +118,48 @@ const Agent = ({
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-    if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
-    } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
-      }
+    try {
+      if (type === "generate") {
+        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+        if (!workflowId) {
+          throw new Error("VAPI workflow ID is missing from environment variables.");
+        }
+
+        console.log("Starting generated interview with:", {
+          workflowId,
+          userName,
+          userId,
+        });
+
+        await vapi.start(workflowId, {
+          variableValues: {
+            username: userName,
+            userid: userId,
+          },
+        });
+      } else {
+        if (!questions || questions.length === 0) {
+          throw new Error("No questions provided for the interview.");
+        }
+
+        const formattedQuestions = questions.map((q) => `- ${q}`).join("\n");
+
+        console.log("Starting custom interview with:", {
+          interviewer,
+          formattedQuestions,
+        });
+
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        });
+      }
+    } catch (err: any) {
+      console.error("Error calling vapi.start:", err?.message);
+      console.error("Error details:", JSON.stringify(err, null, 2));
+      setCallStatus(CallStatus.FINISHED);
     }
   };
 
@@ -153,7 +176,7 @@ const Agent = ({
           <div className="avatar">
             <Image
               src="/ai-avatar.png"
-              alt="profile-image"
+              alt="AI profile"
               width={65}
               height={54}
               className="object-cover"
@@ -168,7 +191,7 @@ const Agent = ({
           <div className="card-content">
             <Image
               src="/user-avatar.png"
-              alt="profile-image"
+              alt="User profile"
               width={539}
               height={539}
               className="rounded-full object-cover size-[120px]"
@@ -196,14 +219,13 @@ const Agent = ({
 
       <div className="w-full flex justify-center">
         {callStatus !== "ACTIVE" ? (
-          <button className="relative btn-call" onClick={() => handleCall()}>
+          <button className="relative btn-call" onClick={handleCall}>
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
                 callStatus !== "CONNECTING" && "hidden"
               )}
             />
-
             <span className="relative">
               {callStatus === "INACTIVE" || callStatus === "FINISHED"
                 ? "Call"
@@ -211,7 +233,7 @@ const Agent = ({
             </span>
           </button>
         ) : (
-          <button className="btn-disconnect" onClick={() => handleDisconnect()}>
+          <button className="btn-disconnect" onClick={handleDisconnect}>
             End
           </button>
         )}
