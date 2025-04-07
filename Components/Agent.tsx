@@ -52,19 +52,24 @@ const Agent = ({
     };
 
     const onSpeechStart = () => {
-      console.log("Speech started");
       setIsSpeaking(true);
     };
 
     const onSpeechEnd = () => {
-      console.log("Speech ended");
       setIsSpeaking(false);
     };
 
     const onError = (error: any) => {
-      console.error("VAPI Error (string):", error?.toString());
-      console.error("VAPI Error (JSON):", JSON.stringify(error, null, 2));
-      console.error("VAPI Error (raw):", error);
+      if (error instanceof Response) {
+        console.error("VAPI Error Response", {
+          status: error.status,
+          statusText: error.statusText,
+        });
+      } else if (error instanceof Error) {
+        console.error("VAPI Error:", error.message);
+      } else {
+        console.error("Unknown VAPI Error:", JSON.stringify(error, null, 2));
+      }
     };
 
     vapi.on("call-start", onCallStart);
@@ -90,7 +95,6 @@ const Agent = ({
     }
 
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-      console.log("Generating feedback...");
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
@@ -120,17 +124,8 @@ const Agent = ({
 
     try {
       if (type === "generate") {
-        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
-
-        if (!workflowId) {
-          throw new Error("VAPI workflow ID is missing from environment variables.");
-        }
-
-        console.log("Starting generated interview with:", {
-          workflowId,
-          userName,
-          userId,
-        });
+        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!;
+        if (!workflowId) throw new Error("Missing VAPI Workflow ID");
 
         await vapi.start(workflowId, {
           variableValues: {
@@ -140,15 +135,10 @@ const Agent = ({
         });
       } else {
         if (!questions || questions.length === 0) {
-          throw new Error("No questions provided for the interview.");
+          throw new Error("No questions available for the interview.");
         }
 
-        const formattedQuestions = questions.map((q) => `- ${q}`).join("\n");
-
-        console.log("Starting custom interview with:", {
-          interviewer,
-          formattedQuestions,
-        });
+        const formattedQuestions = questions.map(q => `- ${q}`).join("\n");
 
         await vapi.start(interviewer, {
           variableValues: {
@@ -157,8 +147,7 @@ const Agent = ({
         });
       }
     } catch (err: any) {
-      console.error("Error calling vapi.start:", err?.message);
-      console.error("Error details:", JSON.stringify(err, null, 2));
+      console.error("Failed to start VAPI:", err);
       setCallStatus(CallStatus.FINISHED);
     }
   };
@@ -171,12 +160,11 @@ const Agent = ({
   return (
     <>
       <div className="call-view">
-        {/* AI Interviewer Card */}
         <div className="card-interviewer">
           <div className="avatar">
             <Image
               src="/ai-avatar.png"
-              alt="AI profile"
+              alt="profile-image"
               width={65}
               height={54}
               className="object-cover"
@@ -186,12 +174,11 @@ const Agent = ({
           <h3>AI Interviewer</h3>
         </div>
 
-        {/* User Profile Card */}
         <div className="card-border">
           <div className="card-content">
             <Image
               src="/user-avatar.png"
-              alt="User profile"
+              alt="profile-image"
               width={539}
               height={539}
               className="rounded-full object-cover size-[120px]"
@@ -218,16 +205,16 @@ const Agent = ({
       )}
 
       <div className="w-full flex justify-center">
-        {callStatus !== "ACTIVE" ? (
+        {callStatus !== CallStatus.ACTIVE ? (
           <button className="relative btn-call" onClick={handleCall}>
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
-                callStatus !== "CONNECTING" && "hidden"
+                callStatus !== CallStatus.CONNECTING && "hidden"
               )}
             />
             <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
+              {callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED
                 ? "Call"
                 : ". . ."}
             </span>
