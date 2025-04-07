@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-
 import { Button } from "@/Components/ui/button";
 import InterviewCard from "@/Components/InterviewCard";
+import ResumeVisualization from "@/Components/ResumeVisualization";
 
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import {
@@ -30,9 +30,23 @@ async function Home() {
             Practice real interview questions & get instant feedback
           </p>
 
-          <Button asChild className="btn-primary max-sm:w-full">
-            <Link href="/interview">Start an Interview</Link>
-          </Button>
+          <div className="flex flex-col gap-4">
+            <Button asChild className="btn-primary max-sm:w-full">
+              <Link href="/interview">Start an Interview</Link>
+            </Button>
+            
+            <Button asChild className="btn-primary max-sm:w-full">
+              <label htmlFor="resume-upload" className="cursor-pointer">
+                Upload Resume
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  id="resume-upload"
+                />
+              </label>
+            </Button>
+          </div>
         </div>
 
         <Image
@@ -42,6 +56,11 @@ async function Home() {
           height={400}
           className="max-sm:hidden"
         />
+      </section>
+
+      <section className="flex flex-col gap-6 mt-8">
+        <h2>Your Skills Visualization</h2>
+        <ResumeVisualization />
       </section>
 
       <section className="flex flex-col gap-6 mt-8">
